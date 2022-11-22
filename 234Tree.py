@@ -1,7 +1,11 @@
+from copy import deepcopy
+
+
 class createTreeItem:
     def __init__(self, key, value):
         self.key = key
         self.value = value
+
 
 class Node:
     def __init__(self):
@@ -52,6 +56,26 @@ class Node:
         self.numI += 1
         return True
 
+    def addKid(self, node):
+        if node.isEmpty():
+            print("You fucked something up")
+            return False
+
+        if self.numC == 0:
+            self.kids.insert(0, node)
+            self.numC += 1
+            return True
+
+        index = 0
+        for i in self.kids:
+            if node.items[node.numI - 1].key < i.items[0].key:
+                break
+            index += 1
+
+        self.kids.insert(index, node)
+        self.numC += 1
+        return True
+
     def delete(self, key):
         index = 0
         found = False
@@ -67,22 +91,26 @@ class Node:
             return True
         return False
 
-    def split(self):
-        pass
+    def simpleDelete(self, index):
+        self.items.pop(index)
+        self.numI -= 1
+        return True
 
     def display(self):
         if self.isEmpty():
-            return
+            return ""
 
-        temp = "("
+        temp = "{'root': ["
         for i in self.items:
             temp += str(i.key) + ", "
 
         temp = temp[:-1]
         temp = temp[:-1]
-        temp += ")"
-        print(temp)
-
+        temp += "], 'children': ["
+        for kid in self.kids:
+            temp += kid.display()
+        temp += "]}"
+        return temp
 
 
 class TwoThreeFourTree:
@@ -102,11 +130,57 @@ class TwoThreeFourTree:
             if current.isLeaf():
                 return None, False
 
-            for i in current.kids:
-                if key <= i.key:
+            kids = current.kids
+            for i in kids:
+                if i.find(key)[1]:
+                    return i.find(key)
+                for j in i.items:
+                    if key < j.key:
+                        current = i
+                        break
+
+    def insertIn(self, key):
+        if self.findItem(key)[1]:
+            print("There is already an item with this key!")
+            return None
+
+        current = self.root
+
+        while True:
+            if current.isFull():
+                self.split(current)
+                return self.insertIn(key)
+
+            if current.isLeaf():
+                return current
+
+            kids = current.kids
+            for i in kids:
+                if key < i.items[i.numI-1].key:
                     current = i
                     break
 
+    def split(self, node):
+        if node.parent is None:  # split root
+            newRoot = Node()
+            newRoot.insert(node.items[1])
+            rightNode = Node()
+            rightNode.insert(node.items[2])
+            rightNode.parent = newRoot
+            kids = node.kids.copy()
+            node.kids = []
+            node.parent = newRoot
+            node.simpleDelete(2)
+            node.simpleDelete(1)
+            newRoot.addKid(node)
+            newRoot.addKid(rightNode)
+            for i in kids:
+                if i.items[i.numI - 1] < node.items[0]:
+                    node.addKid(i)
+                if node.items[node.numI - 1] < i.items[i.numI - 1] < newRoot.items[0]:
+                    newRoot.addKid(i)
+                    node.addKid(i)
+            self.root = newRoot
 
     def insertItem(self, treeItem):
         if self.root is None:
@@ -114,32 +188,32 @@ class TwoThreeFourTree:
 
         current = self.root
         if current.isFull():
-            current.split()
+            self.split(current)
+            return self.insertItem(treeItem)
 
-        return self.root.insert(treeItem)
+        node = self.insertIn(treeItem.key)
+        if node is None:
+            return False
+        return node.insert(treeItem)
 
     def deleteItem(self, key):
         if self.root is None:
             return False
-        return self.root.delete(key)
+        node = self.findItem(key)
+        return node.delete(key)
 
-    def display(self):
+    def save(self):
         current = self.root
-        current.display()
+        return current.display()
 
 
 T = TwoThreeFourTree()
 print(T.insertItem(createTreeItem(666, 666)))
 print(T.insertItem(createTreeItem(69, 69)))
 print(T.insertItem(createTreeItem(420, 420)))
-T.display()
-print(T.deleteItem(420))
-T.display()
-print(T.deleteItem(69))
-T.display()
-print(T.deleteItem(666))
-T.display()
-
+print(T.save())
+print(T.insertItem(createTreeItem(1, 1)))
+print(T.save())
 
 """
 t = TwoThreeFourTree()
