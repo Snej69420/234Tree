@@ -247,6 +247,23 @@ class TwoThreeFourTree:
     def inorderTraverse(self, callback):
         self.recIO(self.root, callback)
 
+    def recLoad(self, root, saved):
+        for items in saved:
+            newNode = Node()
+            for j in items['root']:
+                newNode.insert(createTreeItem(j, j))
+            newNode.parent = root
+            root.addKid(newNode)
+            if 'children' not in items:
+                continue
+            self.recLoad(newNode, items['children'])
+    def load(self, saved):
+        newRoot = Node()
+        items = saved['root']
+        for i in items:
+            newRoot.insert(createTreeItem(i, i))
+        self.root = newRoot
+        self.recLoad(newRoot, saved['children'])
 
 
 """
@@ -277,12 +294,16 @@ print(t.retrieveItem(5)[0])
 print(t.retrieveItem(5)[1])
 t.inorderTraverse(print)
 print(t.save())
+t = None
+t = TwoThreeFourTree()
 t.load({'root': [10], 'children': [{'root': [5]}, {'root': [11]}]})
+print(t.save())
 t.insertItem(createTreeItem(15, 15))
-print(t.deleteItem(0))
 print(t.save())
-print(t.deleteItem(10))
-print(t.save())
+#print(t.deleteItem(0))
+#print(t.save())
+#print(t.deleteItem(10))
+#print(t.save())
 
 
 """
