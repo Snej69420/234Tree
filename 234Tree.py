@@ -135,30 +135,31 @@ class TwoThreeFourTree:
                 if i.find(key)[1]:
                     return i.find(key)
                 for j in i.items:
+                    current = i
                     if key < j.key:
-                        current = i
                         break
 
-    def insertIn(self, key):
+    def insertIn(self, key, split = True):
         if self.findItem(key)[1]:
             print("There is already an item with this key!")
             return None
 
         current = self.root
-
         while True:
-            if current.isFull():
+            if current.isFull() and split:
                 self.split(current)
-                return self.insertIn(key)
+                return self.insertIn(key, False)
 
             if current.isLeaf():
                 return current
 
             kids = current.kids
-            for i in kids:
-                if key < i.items[i.numI-1].key:
+            parent = current
+            for j in parent.items:
+                for i in kids:
                     current = i
-                    break
+                    if key < i.items[i.numI-1].key or key < j.key:
+                        break
 
     def split(self, node):
         if node.parent is None:  # split root
@@ -174,13 +175,28 @@ class TwoThreeFourTree:
             node.simpleDelete(1)
             newRoot.addKid(node)
             newRoot.addKid(rightNode)
-            for i in kids:
-                if i.items[i.numI - 1] < node.items[0]:
-                    node.addKid(i)
-                if node.items[node.numI - 1] < i.items[i.numI - 1] < newRoot.items[0]:
-                    newRoot.addKid(i)
-                    node.addKid(i)
             self.root = newRoot
+        else:
+            parent = node.parent
+            parent.insert(node.items[1])
+            rightNode = Node()
+            rightNode.insert(node.items[2])
+            rightNode.parent = parent
+            kids = node.kids.copy()
+            node.kids = []
+            node.simpleDelete(2)
+            node.simpleDelete(1)
+            parent.addKid(rightNode)
+        for i in kids:
+            if i.items[i.numI - 1].key < node.items[0].key:
+                node.addKid(i)
+            if node.items[node.numI - 1].key < i.items[i.numI - 1].key < rightNode.items[0].key:
+                rightNode.addKid(i)
+                node.addKid(i)
+            if rightNode.items[0].key < i.items[i.numI - 1].key:
+                rightNode.addKid(i)
+        return
+
 
     def insertItem(self, treeItem):
         if self.root is None:
@@ -213,6 +229,13 @@ print(T.insertItem(createTreeItem(69, 69)))
 print(T.insertItem(createTreeItem(420, 420)))
 print(T.save())
 print(T.insertItem(createTreeItem(1, 1)))
+print(T.insertItem(createTreeItem(6, 6)))
+print(T.insertItem(createTreeItem(999, 999)))
+print(T.insertItem(createTreeItem(69420, 69420)))
+print(T.save())
+print(T.insertItem(createTreeItem(1000, 1000)))
+print(T.save())
+print(T.insertItem(createTreeItem(3, 3)))
 print(T.save())
 
 """
