@@ -117,6 +117,11 @@ class TwoThreeFourTree:
     def __init__(self):
         self.root = None
 
+    def isEmpty(self):
+        if self.root is None:
+            return True
+        return False
+
     def findItem(self, key):
         if self.root is None:
             return None, False
@@ -161,6 +166,11 @@ class TwoThreeFourTree:
                     if key < i.items[i.numI-1].key or key < j.key:
                         break
 
+    def retrieveItem(self, key):
+        if self.findItem(key)[1]:
+            return self.findItem(key)[0].key, self.findItem(key)[1]
+        return None, False
+
     def split(self, node):
         if node.parent is None:  # split root
             newRoot = Node()
@@ -197,7 +207,6 @@ class TwoThreeFourTree:
                 rightNode.addKid(i)
         return
 
-
     def insertItem(self, treeItem):
         if self.root is None:
             self.root = Node()
@@ -222,7 +231,25 @@ class TwoThreeFourTree:
         current = self.root
         return current.display()
 
+    def recIO(self, root, callback):
+        if root is None:
+            return
+        leaf = root.isLeaf()
+        for j in range(0, root.numC-1):
+            self.recIO(root.kids[j], callback)
+            callback(root.items[j].value)
+        if not leaf:
+            self.recIO(root.kids[root.numC-1], callback)
+        if leaf:
+            for j in root.items:
+                callback(j.value)
 
+    def inorderTraverse(self, callback):
+        self.recIO(self.root, callback)
+
+
+
+"""
 T = TwoThreeFourTree()
 print(T.insertItem(createTreeItem(666, 666)))
 print(T.insertItem(createTreeItem(69, 69)))
@@ -237,8 +264,8 @@ print(T.insertItem(createTreeItem(1000, 1000)))
 print(T.save())
 print(T.insertItem(createTreeItem(3, 3)))
 print(T.save())
-
 """
+
 t = TwoThreeFourTree()
 print(t.isEmpty())
 print(t.insertItem(createTreeItem(8, 8)))
@@ -257,7 +284,7 @@ print(t.save())
 print(t.deleteItem(10))
 print(t.save())
 
-"""
+
 """
     True
     True
