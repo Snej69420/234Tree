@@ -76,6 +76,13 @@ class Node:
         self.numC += 1
         return True
 
+    def removeKid(self, index):
+        if index >= self.numC:
+            return False
+        self.kids.pop(index)
+        self.numC -= 1
+        True
+
     def delete(self, key):
         index = 0
         found = False
@@ -92,6 +99,8 @@ class Node:
         return False
 
     def simpleDelete(self, index):
+        if index >= self.numI:
+            return False
         self.items.pop(index)
         self.numI -= 1
         return True
@@ -144,7 +153,7 @@ class TwoThreeFourTree:
                     if key < j.key:
                         break
 
-    def insertIn(self, key, split = True):
+    def insertIn(self, key, split=True):
         if self.findItem(key)[1]:
             print("There is already an item with this key!")
             return None
@@ -221,10 +230,102 @@ class TwoThreeFourTree:
             return False
         return node.insert(treeItem)
 
+    def merge0(self, node):
+        kid0 = node.kids[0]
+        kid1 = node.kids[1]
+        if kid0.numI == 1 and kid1.numI == 1:
+            kid0.parent = node.parent
+            kid1.parent = node.parent
+            node.insert(kid0.item[0])
+            node.insert(kid1.item[0])
+            node.removeKid(1)
+            node.removeKid(0)
+            for i in kid0.kids:
+                node.addKid(i)
+            for j in kid1.kids:
+                node.addKid(j)
+            return True
+        return False
+
+    def merge1(self, node):
+        parent = node.parent
+        index = -1
+        j = 0
+        if parent.numI == 2 or parent.numI == 3:
+            parentItem = None
+            parentKid = None
+            parentKid0 = None
+            parentKid1 = None
+            for i in parent.kids:
+                if i.find(node.key):
+                    index = j
+                    break
+                j += 1
+            found = False
+            if index - 1 >= 0:
+                parentKid0 = parent.kids[index - 1]
+                found = True
+            if index + 1 < parent.numC:
+                parentKid1 = parent.kids[index + 1]
+                found = True
+            if not found:
+                return False
+
+            if parentKid0 is not None and parentKid0.numI == 1:
+                parentItem = parent.items[0]
+                parent.simpleDelete(0)
+                parent.removeKid(index-1)
+                parentKid = parentKid0
+            elif parentKid1 is not None and parentKid1.numI == 1:
+                parentItem = parent.items[1]
+                parent.simpleDelete(1)
+                parent.removeKid(index+1)
+                parentKid = parentKid1
+            else:
+                return False
+            parent.removeKid(index)
+            newNode = Node()
+            newNode.insert(node.items[0])
+            newNode.insert(parentItem)
+            newNode.insert(parentKid.items[0])
+            newNode.parent = parent
+            parent.addKid(newNode)
+            for i in node.kids:
+                newNode.addKid(i)
+            for i in parentKid.kids:
+                newNode.addKid(i)
+
+    def merge(self, node):
+        if self.merge0(node):
+            return True
+        if self.merge1(node):
+            return True
+        return False
+
+    def redistribute(self, node):
+        sibling0, sibling1 = None
+        parent = node.parent
+        index = -1
+        j = 0
+        for k in parent.kids:
+            if k == node:
+                index = j
+                break
+            j += 1
+        if index-1 >= 0:
+            sibling0 = parent.kids[index-1]
+        if index+1 < parent.numC:
+            sibling1 = parent.kids[index+1]
+
+
     def deleteItem(self, key):
         if self.root is None:
             return False
         node = self.findItem(key)
+        if not node[1]:
+            return False
+        if node.numI >= 2 and node.isLeaf():
+            return node.delete(key)
         return node.delete(key)
 
     def save(self):
@@ -257,6 +358,7 @@ class TwoThreeFourTree:
             if 'children' not in items:
                 continue
             self.recLoad(newNode, items['children'])
+
     def load(self, saved):
         newRoot = Node()
         items = saved['root']
@@ -300,10 +402,10 @@ t.load({'root': [10], 'children': [{'root': [5]}, {'root': [11]}]})
 print(t.save())
 t.insertItem(createTreeItem(15, 15))
 print(t.save())
-#print(t.deleteItem(0))
-#print(t.save())
-#print(t.deleteItem(10))
-#print(t.save())
+# print(t.deleteItem(0))
+# print(t.save())
+# print(t.deleteItem(10))
+# print(t.save())
 
 
 """
