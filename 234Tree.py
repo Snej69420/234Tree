@@ -25,10 +25,12 @@ class Node:
         return self.numC == 0
 
     def find(self, key):
+        j = 0
         for i in self.items:
             if i.key == key:
-                return i, True
-        return None, False
+                return i, True, j
+            j += 1
+        return None, False, -1
 
     def findKid(self, key):
         for i in self.kids:
@@ -152,6 +154,22 @@ class TwoThreeFourTree:
                     current = i
                     if key < j.key:
                         break
+
+    def inorderSuccesor(self, key):
+        temp = self.findItem(key)
+        if not temp[1]:
+            return None, False
+
+        node = temp[0]
+        index = node.find(key)[2]
+        current = node.kids[index+1]
+        while not current.isLeaf():
+            current = current.kids[0]
+        IS = current.items[0]
+        t = node.items[index]
+        node.items[index] = IS
+        IS = t
+        self.deleteItem(key)
 
     def insertIn(self, key, split=True):
         if self.findItem(key)[1]:
@@ -304,6 +322,7 @@ class TwoThreeFourTree:
 
     def redistribute(self, node):
         sibling0, sibling1 = None
+        chosenOne = None
         parent = node.parent
         index = -1
         j = 0
@@ -316,6 +335,25 @@ class TwoThreeFourTree:
             sibling0 = parent.kids[index-1]
         if index+1 < parent.numC:
             sibling1 = parent.kids[index+1]
+
+        if sibling0 is not None and sibling0.numI > 1:
+            chosenOne = sibling0
+        elif sibling1 is not None and sibling1.numI > 1:
+            chosenOne = sibling1
+        elif parent.numI > 1:
+            sibling = None
+            if sibling0 is not None:
+                sibling = sibling0
+            elif sibling1 is not None:
+                sibling = sibling1
+            else:
+                return False
+
+            # path 2
+            newNode = Node()
+        else:
+            return False
+
 
 
     def deleteItem(self, key):
