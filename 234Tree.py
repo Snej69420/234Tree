@@ -35,7 +35,7 @@ class Node:
                 return i, True
         return None, False
 
-    def insert(self, treeItem : createTreeItem):
+    def insert(self, treeItem: createTreeItem):
         if self.isFull():
             print("You fucked something up")
             return False
@@ -79,11 +79,18 @@ class Node:
 
     def removeKid(self, index):
         if index >= self.numC or index < 0:
-            return None, False
+            return False
         temp = self.kids[index]
         self.kids.pop(index)
         self.numC -= 1
-        return temp, True
+        return True
+
+    def removeAllKids(self):
+        if self.numC == 0:
+            return
+        self.kids.pop(0)
+        self.numC -= 1
+        return self.removeAllKids()
 
     def delete(self, key):
         index = 0
@@ -108,20 +115,26 @@ class Node:
         self.numI -= 1
         return temp, True
 
-    def display(self):
+    def display(self, root=False):
+        insert = ""
+        if root:
+            insert = " "
         if self.isEmpty():
             return ""
 
-        temp = "{'root': ["
+        temp = "{'root':" + insert + "["
         for i in self.items:
-            temp += str(i.key) + ", "
+            temp += str(i.key) + ","
 
         temp = temp[:-1]
-        temp = temp[:-1]
-        temp += "], 'children': ["
-        for kid in self.kids:
-            temp += kid.display()
-        temp += "]}"
+        temp += "]"
+        if self.numC > 0:
+            temp += ",'children':["
+            for kid in self.kids:
+                temp += kid.display() + ","
+            temp = temp[:-1]
+            temp += "]"
+        temp += "}"
         return temp
 
     def spares(self, index):
@@ -177,51 +190,52 @@ class TwoThreeFourTree:
 
             kids = current.kids
             parent = current
-            for j in parent.items:
-                for i in kids:
-                    current = i
-                    if key < i.items[i.numI-1].key or key < j.key:
-                        break
+            j = 0
+            found = False
+            for i in parent.items:
+                if key < i.key:
+                    current = parent.kids[j]
+                    found = True
+                    break
+                j += 1
+            if not found:
+                current = parent.kids[j]
 
     def retrieveItem(self, key):
         if self.findItem(key)[1]:
             return self.findItem(key)[0].find(key)[0].key, self.findItem(key)[1]
         return None, False
 
-    def split(self, node : Node):
+    def split(self, node: Node):
+        kids = node.kids.copy()
+        parent = None
         if node.parent is None:  # split root
             newRoot = Node()
-            newRoot.insert(node.items[1])
+            newRoot.insert(node.simpleDelete(1)[0])
             rightNode = Node()
-            rightNode.insert(node.items[2])
+            rightNode.insert(node.simpleDelete(1)[0])
             rightNode.parent = newRoot
-            kids = node.kids.copy()
-            node.kids = []
+            node.removeAllKids()
             node.parent = newRoot
-            node.simpleDelete(2)
-            node.simpleDelete(1)
             newRoot.addKid(node)
             newRoot.addKid(rightNode)
             self.root = newRoot
+            parent = self.root
         else:
             parent = node.parent
-            parent.insert(node.items[1])
+            parent.insert(node.simpleDelete(1)[0])
             rightNode = Node()
-            rightNode.insert(node.items[2])
+            rightNode.insert(node.simpleDelete(1)[0])
             rightNode.parent = parent
-            kids = node.kids.copy()
-            node.kids = []
-            node.simpleDelete(2)
-            node.simpleDelete(1)
+            node.removeAllKids()
             parent.addKid(rightNode)
-        for i in kids:
-            if i.items[i.numI - 1].key < node.items[0].key:
-                node.addKid(i)
-            if node.items[node.numI - 1].key < i.items[i.numI - 1].key < rightNode.items[0].key:
-                rightNode.addKid(i)
-                node.addKid(i)
-            if rightNode.items[0].key < i.items[i.numI - 1].key:
-                rightNode.addKid(i)
+        for i in parent.items:
+            for j in kids:
+                if j.items[j.numI - 1].key < i.key:
+                    node.addKid(j)
+                else:
+                    rightNode.addKid(j)
+
         return
 
     def insertItem(self, treeItem: createTreeItem):
@@ -251,17 +265,23 @@ class TwoThreeFourTree:
                 break
             j += 1
 
-        if parent.spares(index-1):
-            tempNode = parent.kids[index-1]
-            node.insert(parent.simpleDelete(index-1)[0])
-            node.addKid(tempNode.removeKid(tempNode.numC-1)[0])
-            parent.insert(tempNode.simpleDelete(tempNode.numI-1)[0])
+        if parent.spares(index - 1):
+            tempNode = parent.kids[index - 1]
+            node.insert(parent.simpleDelete(index - 1)[0])
+            if 0 < tempNode.numC:
+                kid = tempNode.kids[tempNode.numC - 1]
+                tempNode.removeKid(tempNode.numC - 1)
+                node.addKid(kid)
+            parent.insert(tempNode.simpleDelete(tempNode.numI - 1)[0])
             return
 
-        if parent.spares(index+1):
-            tempNode = parent.kids[index+1]
+        if parent.spares(index + 1):
+            tempNode = parent.kids[index + 1]
             node.insert(parent.simpleDelete(index)[0])
-            node.addKid(tempNode.removeKid(0)[0])
+            if 0 < tempNode.numC:
+                kid = tempNode.kid[0]
+                tempNode.removeKid(0)
+                node.addKid(kid)
             parent.insert(tempNode.simpleDelete(0)[0])
             return
 
@@ -270,25 +290,38 @@ class TwoThreeFourTree:
             merged = parent.kids[1]
             node.insert(merged.simpleDelete(0)[0])
             parent.removeKid(1)
-            node.addKid(merged.removeKid(1)[0])
-            node.addKid(merged.removeKid(0)[0])
+            if 1 < merged.numC:
+                kid = merged.kids[1]
+                merged.removeKid(1)
+                node.addKid(kid)
+            if 0 < merged.numC:
+                kid = merged.kids[0]
+                merged.removeKid(0)
+                node.addKid(kid)
             if parent == self.root and parent.isEmpty():
                 self.root = node
             return
 
-        node.insert(parent.simpleDelete(index-1)[0])
-        merged = parent.kids[index-1]
+        node.insert(parent.simpleDelete(index - 1)[0])
+        merged = parent.kids[index - 1]
         node.insert(merged.simpleDelete(0)[0])
-        parent.removeKid(index-1)
-        node.addKid(merged.removeKid(1)[0])
-        node.addKid(merged.removeKid(0)[0])
+        parent.removeKid(index - 1)
+        if 1 < merged.numC:
+            kid = merged.kids[1]
+            merged.removeKid(1)
+            node.addKid(kid)
+        if 0 < merged.numC:
+            kid = merged.kids[0]
+            merged.removeKid(0)
+            node.addKid(kid)
         if parent == self.root and parent.isEmpty():
             self.root = node
         return
 
-    def inorderSuccessor(self, key):
+    def inorderSuccessor(self, key, check=False):
         """
         switch treeItem with inorderSuccessor if possible and merge or redistribute nodes on path to inorderSuccessor
+        :param check: do we want to redistribute or merge any 2 nodes on the path
         :param key: key of treeItem we want to find inorderSuccessor of
         :return: succes
         """
@@ -300,12 +333,14 @@ class TwoThreeFourTree:
         index = node.find(key)[2]
         if node.isLeaf():
             return None
-        current = node.kids[index+1]
+        current = node.kids[index + 1]
         while not current.isLeaf():
             next = current.kids[0]
-            self.check(current)
+            if check:
+                self.check(current)
             current = next
-        self.check(current)
+        if check:
+            self.check(current)
         return current
 
     def recDelete(self, current: Node, key):
@@ -315,27 +350,28 @@ class TwoThreeFourTree:
             self.check(current)
 
         index = current.find(key)[2]
-        subtreeIndex = -1
+        correctKidIndex = -1
         j = 0
         found = False
-        for k in current.kids:
-            if key < k.items[k.numI-1].key:
-                subtreeIndex = j
+        for k in current.items:
+            if key < k.key:
+                correctKidIndex = j
                 found = True
                 break
             j += 1
 
         if not found:
-            subtreeIndex = j
+            correctKidIndex = j
         if index == -1:  # check if current node contains item with key
-            return self.recDelete(current.kids[subtreeIndex], key)
+            correctKid = current.kids[correctKidIndex]
+            return self.recDelete(correctKid, key)
 
         if current.isLeaf():
-            current.simpleDelete(index)
+            current.delete(key)
             if current == self.root and self.root.numI == 0:
                 self.root = None
             return True
-        IO = self.inorderSuccessor(key)
+        IO = self.inorderSuccessor(key, True)
         node, result, i = self.findItem(key)
         if node.isLeaf():
             node.simpleDelete(i)
@@ -350,19 +386,19 @@ class TwoThreeFourTree:
 
     def save(self):
         if self.root is None:
-            return
+            return {'root': []}
         current = self.root
-        return current.display()
+        return current.display(True)
 
     def recIO(self, root, callback):
         if root is None:
             return
         leaf = root.isLeaf()
-        for j in range(0, root.numC-1):
+        for j in range(0, root.numC - 1):
             self.recIO(root.kids[j], callback)
             callback(root.items[j].value)
         if not leaf:
-            self.recIO(root.kids[root.numC-1], callback)
+            self.recIO(root.kids[root.numC - 1], callback)
         if leaf:
             for j in root.items:
                 callback(j.value)
@@ -382,10 +418,8 @@ class TwoThreeFourTree:
             self.recLoad(newNode, items['children'])
 
     def load(self, saved):
-        print("loading")
         while self.root is not None:
             self.deleteItem(self.root.items[0].key)
-            print(self.save())
         newRoot = Node()
         items = saved['root']
         for i in items:
@@ -394,40 +428,40 @@ class TwoThreeFourTree:
         self.recLoad(newRoot, saved['children'])
 
 
+class TwoThreeFourTreeTable:
+    def __init__(self):
+        self.tree = TwoThreeFourTree()
+
+    def tableIsEmpty(self):
+        return self.tree.isEmpty()
+
+    def tableInsert(self, treeItem):
+        return self.tree.insertItem(treeItem)
+
+    def tableDelete(self, key):
+        return self.tree.deleteItem(key)
+
+    def tableRetrieve(self, key):
+        return self.tree.retrieveItem(key)
+
+    def save(self):
+        return self.tree.save()
+
+    def load(self, saved):
+        return self.tree.load(saved)
+
+    def traverseTable(self, callback):
+        return self.tree.inorderTraverse(callback)
+
+
 t = TwoThreeFourTree()
-print(t.isEmpty())
-print(t.insertItem(createTreeItem(8, 8)))
-print(t.insertItem(createTreeItem(5, 5)))
-print(t.insertItem(createTreeItem(10, 10)))
-print(t.insertItem(createTreeItem(15, 15)))
-print(t.isEmpty())
-print(t.retrieveItem(5)[0])
-print(t.retrieveItem(5)[1])
-t.inorderTraverse(print)
-print(t.save())
-t.load({'root': [10], 'children': [{'root': [5]}, {'root': [11]}]})
-t.insertItem(createTreeItem(15, 15))
-print(t.deleteItem(0))
-print(t.save())
-print(t.deleteItem(10))
+t.load({'root': [5], 'children': [{'root': [2], 'children': [{'root': [1]}, {'root': [3, 4]}]},
+                                  {'root': [12], 'children': [{'root': [10]}, {'root': [13, 15, 16]}]}]})
+t.deleteItem(13)
+t.deleteItem(10)
+t.deleteItem(16)
 print(t.save())
 
 """
-    True
-    True
-    True
-    True
-    True
-    False
-    5
-    True
-    5
-    8
-    10
-    15
-    {'root': [8], 'children': [{'root': [5]}, {'root': [10, 15]}]}
-    False
-    {'root': [10], 'children': [{'root': [5]}, {'root': [11, 15]}]}
-    True
-    {'root': [11], 'children': [{'root': [5]}, {'root': [15]}]}
+{'root': [2, 5], 'children': [{'root': [1]}, {'root': [3, 4]}, {'root': [12, 15]}]}
 """
