@@ -265,16 +265,6 @@ class TwoThreeFourTree:
                 break
             j += 1
 
-        if parent.spares(index - 1):
-            tempNode = parent.kids[index - 1]
-            node.insert(parent.simpleDelete(index - 1)[0])
-            if 0 < tempNode.numC:
-                kid = tempNode.kids[tempNode.numC - 1]
-                tempNode.removeKid(tempNode.numC - 1)
-                node.addKid(kid)
-            parent.insert(tempNode.simpleDelete(tempNode.numI - 1)[0])
-            return
-
         if parent.spares(index + 1):
             tempNode = parent.kids[index + 1]
             node.insert(parent.simpleDelete(index)[0])
@@ -283,6 +273,16 @@ class TwoThreeFourTree:
                 tempNode.removeKid(0)
                 node.addKid(kid)
             parent.insert(tempNode.simpleDelete(0)[0])
+            return
+
+        if parent.spares(index - 1):
+            tempNode = parent.kids[index - 1]
+            node.insert(parent.simpleDelete(index - 1)[0])
+            if 0 < tempNode.numC:
+                kid = tempNode.kids[tempNode.numC - 1]
+                tempNode.removeKid(tempNode.numC - 1)
+                node.addKid(kid)
+            parent.insert(tempNode.simpleDelete(tempNode.numI - 1)[0])
             return
 
         if index == 0:
